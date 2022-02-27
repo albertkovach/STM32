@@ -1,0 +1,27 @@
+1. NppExec -> Execute NppExec Script -> Enter script -> Save
+
+	=== arduino-verify ===
+NPP_SAVE
+"D:\Program Files\Arduino\arduino-1.8.19\arduino_debug.exe" --verify "$(FULL_CURRENT_PATH)"
+
+	=== arduino-upload ===
+NPP_SAVE
+"D:\Program Files\Arduino\arduino-1.8.19\arduino_debug.exe" --upload "$(FULL_CURRENT_PATH)"
+
+	=== arduino-upload-COM ===
+NPP_SAVE
+inputbox "Enter the COM port of your Arduino (e.g., COM1):"
+"D:\Program Files\Arduino\arduino-1.8.19\arduino_debug.exe" --port $(input) --upload $(FULL_CURRENT_PATH)
+
+	=== arduino-verify-verbose ===
+NPP_SAVE
+"D:\Program Files\Arduino\arduino-1.8.19\arduino_debug.exe" --upload "$(FULL_CURRENT_PATH)" --verbose-build
+
+
+2. NppExec -> Advanced options -> Place to the macros submenu -> Associated script -> Add -> Ok
+
+
+
+// NppArduino plugin after arduino-cli
+// https://arduino.github.io/arduino-cli/0.21/installation/#download
+// https://github.com/luisllamasbinaburo/NppArduino
