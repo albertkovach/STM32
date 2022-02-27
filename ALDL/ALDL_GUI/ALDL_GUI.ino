@@ -85,8 +85,9 @@ String ECMmenuHeader = "   ===== ECM data =====";
 String TCMmenuHeader = "   ===== TCM data =====";
 
 String ECMsensHeader = "  ===== ECM sensors =====";
-String ArrayECMsens[] =  {"< Exit >","Speed","RPM","Coolant temp:","Manifold air:","MAP","Barometric","Lambda"};
-int ArrayECMsensLen = 8;
+String ArrayECMsens[] =  {"< Exit >","1","2","3","4","5","6","7","8","9","10"};
+//String ArrayECMsens[] =  {"< Exit >","Speed","RPM","Coolant temp:","Manifold air:","MAP","Barometric","Lambda"};
+int ArrayECMsensLen = 11;
 
 String ECMbitmasksHeader = "  ===== ECM bitmasks =====";
 String ArrayECMbitmasks[] =  {"< Exit >","Bit 1","Bit 2","Bit 3","Bit 4"};
@@ -124,6 +125,7 @@ void setup() {
 void loop() {  
 	BtnHandler();
 	Increment();
+	ArraysHandler();
 	RefreshScreen();
 }
 
@@ -214,8 +216,19 @@ void RefreshScreen() {
 
 
 
+
+
 void ArraysHandler() {
-	
+	ArrayECMsens[1]  = "RPM                   " + String(int(RPM));
+	ArrayECMsens[2]  = "TPS                    " + String(int(TPS));
+	ArrayECMsens[3]  = "Speed                  " + String(int(Speed));
+	ArrayECMsens[4]  = "EngineTemp             " + String(int(EngineTemp));
+	ArrayECMsens[5]  = "SparkAdv             " + String(SparkAdv);
+	ArrayECMsens[6]  = "Integrator             " + String(int(Integrator));
+	ArrayECMsens[7]  = "InjBPW               " + String(InjBPW);
+	ArrayECMsens[8]  = "Batt                 " + String(Batt);
+	ArrayECMsens[9]  = "MAT                  " + String(MAT);
+	ArrayECMsens[10] = "FuelConsmp           " + String(FuelConsmp);
 }
 
 
@@ -347,27 +360,27 @@ void ScreenDataList(String Header, String Array[], int ArrayLenght) {
 		
 		TFT.setCursor(0, GUIMenuElementSize+GUIoffset);
 		TFT.print(Array[0]);
-		TFT.print("                    ");
+		TFT.print("                            ");
 		
 		if (ArrayLenght > 1) {
 			TFT.setCursor(0, GUIMenuElementSize*2+GUIoffset);
 			TFT.print(Array[1]);
-			TFT.print("                    ");
+			TFT.print("                            ");
 			
 			if (ArrayLenght > 2) {
 				TFT.setCursor(0, GUIMenuElementSize*3+GUIoffset);
 				TFT.print(Array[2]);
-				TFT.print("                    ");
+				TFT.print("                            ");
 				
 				if (ArrayLenght > 3) {
 					TFT.setCursor(0, GUIMenuElementSize*4+GUIoffset);
 					TFT.print(Array[3]);
-					TFT.print("                    ");
+					TFT.print("                            ");
 					
 					if (ArrayLenght > 4) {
 						TFT.setCursor(0, GUIMenuElementSize*5+GUIoffset);
 						TFT.print(Array[4]);
-						TFT.print("                    ");
+						TFT.print("                            ");
 					}
 				}
 			}
@@ -390,30 +403,30 @@ void ScreenDataList(String Header, String Array[], int ArrayLenght) {
 		TFT.setCursor(0, GUIMenuElementSize+GUIoffset);
 		if(Screen3levelSelected > 2){
 			TFT.print(Array[Screen3levelSelected-3]);
-		} TFT.print("                    ");
+		} TFT.print("                            ");
 		
 		
 		TFT.setCursor(0, GUIMenuElementSize*2+GUIoffset);
 		if(Screen3levelSelected >= 2) {
 			TFT.print(Array[Screen3levelSelected-2]);
-		} TFT.print("                    ");
+		} TFT.print("                            ");
 		
 		
 		TFT.setCursor(0, GUIMenuElementSize*3+GUIoffset);
 		TFT.print(Array[Screen3levelSelected-1]);
-		TFT.print("                    ");
+		TFT.print("                            ");
 		
 		
 		TFT.setCursor(0, GUIMenuElementSize*4+GUIoffset);
 		if(Screen3levelSelected <= Screen3levelAmount-1){
 			TFT.print(Array[Screen3levelSelected]);
-		} TFT.print("                    ");
+		} TFT.print("                            ");
 		
 		
 		TFT.setCursor(0, GUIMenuElementSize*5+GUIoffset);
 		if(Screen3levelSelected < Screen3levelAmount-1){
 			TFT.print(Array[Screen3levelSelected+1]);
-		} TFT.print("                    ");
+		} TFT.print("                            ");
 		
 		TFT.drawLine(0, 1*GUIMenuElementSize, 160, 1*GUIMenuElementSize, ST77XX_BLACK);
 		TFT.drawLine(0, 2*GUIMenuElementSize, 160, 2*GUIMenuElementSize, ST77XX_BLACK);
@@ -672,7 +685,7 @@ void Increment() {
   if (Integrator > 180) Integrator = 95;
 
   FuelConsmp = FuelConsmp + 5;
-  if (FuelConsmp > 110) FuelConsmp = 0;
+  if (FuelConsmp > 95) FuelConsmp = 0;
 
 }
 
