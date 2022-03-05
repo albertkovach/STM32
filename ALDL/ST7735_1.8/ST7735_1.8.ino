@@ -79,8 +79,57 @@ Note about custom font:
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-int RefreshRate = 240;
+
+int NextPageTime = 50;
 float p = 3.1415926;
+
+
+
+
+#define Xo 50   // center point
+#define Yo 50   // center point
+#define RADIUS 50  // radius of the clock face
+
+#define Hand_LEN  35  // second hand
+#define Hand_TAIL  10
+
+#define TEXT_SIZE 1
+
+typedef struct POINT {uint16_t x; uint16_t y;};
+typedef struct LINE {POINT a;POINT b;};
+typedef struct HAND_POINTS {POINT a;POINT b; POINT e; POINT f;};
+
+#define BLACK           0x0000      /*   0,   0,   0 */
+#define NAVY            0x000F      /*   0,   0, 128 */
+#define DARKGREEN       0x03E0      /*   0, 128,   0 */
+#define DARKCYAN        0x03EF      /*   0, 128, 128 */
+#define MAROON          0x7800      /* 128,   0,   0 */
+#define PURPLE          0x780F      /* 128,   0, 128 */
+#define OLIVE           0x7BE0      /* 128, 128,   0 */
+#define LIGHTGREY       0xC618      /* 192, 192, 192 */
+#define DARKGREY        0x7BEF      /* 128, 128, 128 */
+#define BLUE            0x001F      /*   0,   0, 255 */
+#define GREEN           0x07E0      /*   0, 255,   0 */
+#define CYAN            0x07FF      /*   0, 255, 255 */
+#define RED             0xF800      /* 255,   0,   0 */
+#define MAGENTA         0xF81F      /* 255,   0, 255 */
+#define YELLOW          0xFFE0      /* 255, 255,   0 */
+#define WHITE           0xFFFF      /* 255, 255, 255 */
+#define ORANGE          0xFD20      /* 255, 165,   0 */
+#define GREENYELLOW     0xAFE5      /* 173, 255,  47 */
+#define PINK            0xF81F
+
+#define CREF_BACKGROUND BLACK
+#define FACE            ORANGE
+#define CREF_SECOND     RED
+#define CREF_MINUTE     CYAN
+#define CREF_HOUR       CYAN
+#define NUMERIC_POINT   WHITE
+#define CREF_HELLO      RED
+#define CREF_TEXT       DARKCYAN
+#define CREF_TEXT_BRAND ORANGE
+#define CREF_TIME       MAGENTA
+#define CREF_DATE       GREENYELLOW
 
 
 void setup(void) {
@@ -93,36 +142,144 @@ void loop() {
 	UpdateScreen();
 }
 
+
 void UpdateScreen() {
+	
+	drawFace();
+	//draw_NewSecondHand();
+}
+
+
+
+
+
+
+
+void drawFace()
+{
+  int i = 0, angle = 0;
+  float x, y;
+
+  // Draw outer frame
+  tft.drawCircle(Xo, Yo, RADIUS + 21, FACE);
+  tft.drawCircle(Xo, Yo, RADIUS + 20, FACE);
+
+  // Draw inner frame
+  tft.drawCircle(Xo, Yo, RADIUS + 12, FACE);
+  tft.drawCircle(Xo, Yo, RADIUS + 11, FACE);
+  tft.drawCircle(Xo, Yo, RADIUS + 10, FACE);
+
+  //Draw Numeric point
+
+  for (i = 0; i <= 12; i++) {
+    x = Xo + RADIUS * cos(angle * p / 180);
+    y = Yo + RADIUS * sin(angle * p / 180);
+    tft.drawCircle(x, y, 2, NUMERIC_POINT);
+    angle += 30;
+  }
+
+  for (i = 0; i < 360; i += 6) {
+	tft.drawPixel(Xo + RADIUS * cos(i * p / 180), Yo + RADIUS * sin(i * p / 180), NUMERIC_POINT);
+  }
+}
+
+
+
+
+
+
+
+/*
+void calc_SecondHand()
+{
+  float angle; // in radian
+  //  int Xa, Ya, Xb, Yb;
+  angle =  0.785;
+  ps.a.x = Xo + (Hand_LEN) * cos(angle);
+  ps.a.y = Yo + (Hand_LEN) * sin(angle);
+  angle += 3.142; // +180 degree
+  ps.b.x = Xo + (Hand_TAIL) * cos(angle);
+  ps.b.y = Yo + (Hand_TAIL) * sin(angle);
+}
+
+
+
+
+void draw_NewSecondHand()
+{
+  tft.drawLine(n_hands.Sec.a.x, n_hands.Sec.a.y, n_hands.Sec.b.x, n_hands.Sec.b.y, CREF_SECOND);
+  tft.fillCircle(n_hands.Sec.b.x, n_hands.Sec.b.y, 2, CREF_SECOND);
+}
+
+
+void cdraw_SecondHand()
+{
+
+  tft.fillCircle(o_hands.Sec.b.x, o_hands.Sec.b.y, 2, CREF_BACKGROUND); 
+  tft.fillCircle(n_hands.Sec.b.x, n_hands.Sec.b.y, 2, CREF_SECOND);
+  tft.drawLine(o_hands.Sec.a.x, o_hands.Sec.a.y, o_hands.Sec.b.x, o_hands.Sec.b.y, CREF_BACKGROUND);
+  tft.drawLine(n_hands.Sec.a.x, n_hands.Sec.a.y, n_hands.Sec.b.x, n_hands.Sec.b.y, CREF_SECOND);
+  tft.fillCircle(n_hands.Sec.b.x, n_hands.Sec.b.y, 2, CREF_SECOND);
+}
+
+
+
+
+
+void calc_Hands(HAND_SET &hs, TME t)
+{
+  calc_SecondHand(t, hs.Sec);
+}
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void TFTcheck() {
   tft.fillScreen(ST77XX_BLACK);
   testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE);
-  delay(RefreshRate*4);
+  delay(NextPageTime*4);
 
   tftPrintTest();
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   testlines(ST77XX_YELLOW);
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   testfastlines(ST77XX_RED, ST77XX_BLUE);
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   testdrawrects(ST77XX_GREEN);
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   testfillrects(ST77XX_YELLOW, ST77XX_MAGENTA);
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   tft.fillScreen(ST77XX_BLACK);
   testfillcircles(10, ST77XX_BLUE);
   testdrawcircles(10, ST77XX_WHITE);
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   testroundrects();
-  delay(RefreshRate);
+  delay(NextPageTime);
 
   testtriangles();
-  delay(RefreshRate);
+  delay(NextPageTime);
 }
 
 
