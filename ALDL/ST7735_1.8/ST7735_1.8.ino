@@ -1,25 +1,5 @@
 /*   
   Red 1.8 TFT PSI 128*160 v1.1 ST7735
-      Подключение к Leonardo
-    == PIN === Conn === Define
-     * LED   * 3.3V  *   ---
-     * SCK   *  13   *   ---
-     * SDA   *  11   *   ---
-     * A0    *  10   *    9
-     * RESET *   9   *    8
-     * CS    *  11   *   10
-     * GND   * GND   *   ---
-     * VCC   *  5V   *   ---
-
-ICSP conn pinout:
-RST * SCK  * MISO
-GND * MOSI *  5V
-
-Hardware SPI Pins:
- * Arduino Uno   SCK=13, SDA=11
- * Arduino Nano  SCK=13, SDA=11
- * Arduino Due   SCK=76, SDA=75
- * Arduino Mega  SCK=52, SDA=51
 
 SPI pin names can be confusing. These are the alternative names for the SPI pins:
 MOSI = SDA = SDO = DIN = R/W = DI = SI = MTSR = D1 = SDI
@@ -76,28 +56,16 @@ Note about custom font:
 #define TFT_CS     PA4
 #define TFT_RST    PA1
 #define TFT_DC     PA0
+#define TFT_LED    PB9
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-
 int NextPageTime = 50;
-float p = 3.1415926;
 
-
-
-
-#define Xo 50   // center point
-#define Yo 50   // center point
-#define RADIUS 50  // radius of the clock face
-
-#define Hand_LEN  35  // second hand
-#define Hand_TAIL  10
-
-#define TEXT_SIZE 1
-
+/*
 typedef struct POINT {uint16_t x; uint16_t y;};
 typedef struct LINE {POINT a;POINT b;};
-typedef struct HAND_POINTS {POINT a;POINT b; POINT e; POINT f;};
+typedef struct HAND_POINTS {POINT a;POINT b; POINT e; POINT f;};*/
 
 #define BLACK           0x0000      /*   0,   0,   0 */
 #define NAVY            0x000F      /*   0,   0, 128 */
@@ -132,6 +100,23 @@ typedef struct HAND_POINTS {POINT a;POINT b; POINT e; POINT f;};
 #define CREF_DATE       GREENYELLOW
 
 
+#define Xo 50   // center point
+#define Yo 50   // center point
+#define RADIUS 50  // radius of the clock face
+
+#define Hand_LEN  35  // second hand
+#define Hand_TAIL  10
+
+#define TEXT_SIZE 1
+
+
+float p = 3.1415926;
+float Hand1Angle;
+int Hand1AngleSpeed = 1;
+
+
+
+
 void setup(void) {
   tft.initR(INITR_BLACKTAB);
   tft.fillScreen(ST77XX_BLACK);
@@ -147,6 +132,8 @@ void UpdateScreen() {
 	
 	drawFace();
 	//draw_NewSecondHand();
+	RotateHand();
+	fps(1);
 }
 
 
@@ -157,33 +144,70 @@ void UpdateScreen() {
 
 void drawFace()
 {
-  int i = 0, angle = 0;
-  float x, y;
+	tft.setRotation(3);
+	tft.setFont();
+	tft.setTextSize(1);
+	tft.setCursor(0, 110);
+	
+	int i = 0, angle = 0;
+	float x, y;
 
-  // Draw outer frame
-  tft.drawCircle(Xo, Yo, RADIUS + 21, FACE);
-  tft.drawCircle(Xo, Yo, RADIUS + 20, FACE);
+	// Draw outer frame
+	//tft.drawCircle(Xo, Yo, RADIUS + 21, FACE);
+	//tft.drawCircle(Xo, Yo, RADIUS + 20, FACE);
 
-  // Draw inner frame
-  tft.drawCircle(Xo, Yo, RADIUS + 12, FACE);
-  tft.drawCircle(Xo, Yo, RADIUS + 11, FACE);
-  tft.drawCircle(Xo, Yo, RADIUS + 10, FACE);
+	// Draw inner frame
+	tft.drawCircle(Xo, Yo, RADIUS + 10, FACE);
+	tft.drawCircle(Xo, Yo, RADIUS + 9, FACE);
+	tft.drawCircle(Xo, Yo, RADIUS + 8, FACE);
 
-  //Draw Numeric point
+	//Draw Numeric point
 
-  for (i = 0; i <= 12; i++) {
-    x = Xo + RADIUS * cos(angle * p / 180);
-    y = Yo + RADIUS * sin(angle * p / 180);
-    tft.drawCircle(x, y, 2, NUMERIC_POINT);
-    angle += 30;
-  }
+	for (i = 0; i <= 12; i++) {
+		x = Xo + RADIUS * cos(angle * p / 180);
+		y = Yo + RADIUS * sin(angle * p / 180);
+		tft.drawCircle(x, y, 2, NUMERIC_POINT);
+		angle += 30;
+	}
 
-  for (i = 0; i < 360; i += 6) {
-	tft.drawPixel(Xo + RADIUS * cos(i * p / 180), Yo + RADIUS * sin(i * p / 180), NUMERIC_POINT);
-  }
+	for (i = 0; i < 360; i += 6) {
+		tft.drawPixel(Xo + RADIUS * cos(i * p / 180), Yo + RADIUS * sin(i * p / 180), NUMERIC_POINT);
+	}
+  
+  
+  
 }
 
 
+
+void RotateHand() {
+	
+	tft.drawLine(Xo, Yo, Xo + RADIUS * cos(Hand1Angle * p / 180), Yo + RADIUS * sin(Hand1Angle * p / 180), BLACK);
+	Hand1Angle = Hand1Angle + 1;
+	tft.drawLine(Xo, Yo, Xo + RADIUS * cos(Hand1Angle * p / 180), Yo + RADIUS * sin(Hand1Angle * p / 180), NUMERIC_POINT);
+	
+	
+}
+
+
+
+static inline void fps(const int seconds){
+  // Create static variables so that the code and variables can
+  // all be declared inside a function
+  static unsigned long lastMillis;
+  static unsigned long frameCount;
+  static unsigned int framesPerSecond;
+  
+  // It is best if we declare millis() only once
+  unsigned long now = millis();
+  frameCount ++;
+  if (now - lastMillis >= seconds * 1000) {
+    framesPerSecond = frameCount / seconds;
+    tft.print(framesPerSecond);
+    frameCount = 0;
+    lastMillis = now;
+  }
+}
 
 
 

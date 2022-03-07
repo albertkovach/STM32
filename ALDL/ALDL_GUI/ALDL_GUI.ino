@@ -5,6 +5,7 @@
 #define TFT_CS     PA4
 #define TFT_RST    PA1
 #define TFT_DC     PA0
+#define TFT_LED    PB9
 
 Adafruit_ST7735 TFT = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
@@ -14,9 +15,15 @@ Adafruit_ST7735 TFT = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 //	https://ee-programming-notepad.blogspot.com/2016/10/16-bit-color-generator-picker.html
 //  ArylideYellow 0xE68D
 
-#define BtnUpPin  PB14//12
+#define BtnUpPin  PB14
 #define BtnOkPin  PB13
-#define BtnDwPin  PB12//14
+#define BtnDwPin  PB12
+
+
+bool TFTledMode = 1;
+bool TFTdimUp = 1;
+int TFTdimValue = 0;
+
 
 int BtnUpState = 0;
 int BtnUpOldState = 1;
@@ -102,14 +109,13 @@ bool ScreenNeedFillBlack3level = false;
 int GUIMenuElementSize = 20;
 int GUIoffset = 5;
 
-// Количество пунктов меню зависит от длинн соответствующих массивов
 
+// Количество пунктов меню зависит от длинн соответствующих массивов
 String ECMmenuHeader = "   ===== ECM data =====";
 String TCMmenuHeader = "   ===== TCM data =====";
 
 String ECMsensHeader = "  ===== ECM sensors =====";
 String ArrayECMsens[] =  {"< Exit >","1","2","3","4","5","6","7","8","9","10"};
-//String ArrayECMsens[] =  {"< Exit >","Speed","RPM","Coolant temp:","Manifold air:","MAP","Barometric","Lambda"};
 int ArrayECMsensLen = 11;
 
 String ECMbitmasksHeader = "  ===== ECM bitmasks =====";
@@ -139,7 +145,8 @@ void setup() {
 	pinMode(BtnUpPin, INPUT_PULLUP);
 	pinMode(BtnOkPin, INPUT_PULLUP);
 	pinMode(BtnDwPin, INPUT_PULLUP);
-
+	pinMode(TFT_LED, PWM);
+	
 	TFTinit();
 }
 
@@ -150,6 +157,8 @@ void loop() {
 	Increment();
 	ArraysHandler();
 	RefreshScreen();
+	
+	//TFTdimLed2();
 }
 
 
@@ -175,6 +184,28 @@ void TFTinit() {
 	TFT.setTextColor(Yellow, ST7735_BLACK);
 	TFT.cp437(true);
 }
+
+
+
+void TFTdimLed2() {
+
+	if (TFTdimUp == 1) {
+		TFTdimValue = TFTdimValue + 1200;
+		if (TFTdimValue > 65535) {
+			TFTdimUp = 0;
+			TFTdimValue = TFTdimValue - 1200;
+		}
+		pwmWrite(TFT_LED, TFTdimValue);
+	} else {
+		TFTdimValue = TFTdimValue - 1200;
+		if (TFTdimValue < 0) {
+			TFTdimUp = 1;
+			TFTdimValue = TFTdimValue + 1200;
+		}
+		pwmWrite(TFT_LED, TFTdimValue);
+	}
+}
+
 
 
 void RefreshScreen() {
