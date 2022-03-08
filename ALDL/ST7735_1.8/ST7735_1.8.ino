@@ -48,24 +48,10 @@ Note about custom font:
 
 */
 
-
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 
-#define TFT_CS     PA4
-#define TFT_RST    PA1
-#define TFT_DC     PA0
-#define TFT_LED    PB9
-
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
-
-int NextPageTime = 50;
-
-/*
-typedef struct POINT {uint16_t x; uint16_t y;};
-typedef struct LINE {POINT a;POINT b;};
-typedef struct HAND_POINTS {POINT a;POINT b; POINT e; POINT f;};*/
 
 #define BLACK           0x0000      /*   0,   0,   0 */
 #define NAVY            0x000F      /*   0,   0, 128 */
@@ -82,36 +68,61 @@ typedef struct HAND_POINTS {POINT a;POINT b; POINT e; POINT f;};*/
 #define RED             0xF800      /* 255,   0,   0 */
 #define MAGENTA         0xF81F      /* 255,   0, 255 */
 #define YELLOW          0xFFE0      /* 255, 255,   0 */
+#define AR_YELLOW       0xE68D
 #define WHITE           0xFFFF      /* 255, 255, 255 */
 #define ORANGE          0xFD20      /* 255, 165,   0 */
 #define GREENYELLOW     0xAFE5      /* 173, 255,  47 */
 #define PINK            0xF81F
 
-#define CREF_BACKGROUND BLACK
-#define FACE            ORANGE
-#define CREF_SECOND     RED
-#define CREF_MINUTE     CYAN
-#define CREF_HOUR       CYAN
-#define NUMERIC_POINT   WHITE
-#define CREF_HELLO      RED
-#define CREF_TEXT       DARKCYAN
-#define CREF_TEXT_BRAND ORANGE
-#define CREF_TIME       MAGENTA
-#define CREF_DATE       GREENYELLOW
+
+#define TFT_CS     PA4
+#define TFT_RST    PA1
+#define TFT_DC     PA0
+#define TFT_LED    PB9
+
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+
+int NextPageTime = 50;
 
 
-#define Xo 45   // center point
-#define Yo 45   // center point
-#define RADIUS 40  // radius of the clock face
-
-#define TEXT_SIZE 1
 
 
+// == Gauge config ==
+// ==================
+byte GaugeX = 52;
+byte GaugeY = 52;
+byte GaugeR = 50;
+int GaugeStartAngle = 135;
+int GaugeLenghtAngle = 225;
+int GaugeMaxAngle = GaugeStartAngle + GaugeLenghtAngle;
+byte GaugeParts = 25;
+byte GaugePartsLong = 5;
+int GaugeHandAngle = 135;
+// 0-360; 135-180; 135-225
+
+// Colors
+#define GAUGE_FACE				AR_YELLOW
+#define GAUGE_MARKS				AR_YELLOW
+#define GAUGE_MARKS_LONG		RED
+#define GAUGE_MAIN_HAND			AR_YELLOW
+#define GAUGE_SECONDARY_HAND	WHITE
+#define GAUGE_ERASER			BLACK
+#define GAUGE_CENTRAL_POINT		AR_YELLOW
+
+
+// Global var for prev pos saving
 float p = 3.1415926;
-float HandAngleTop;
-float HandAngleLeft;
-float HandAngleRight;
-int HandAngle = 135;
+float GaugeHandAngleTop;
+float GaugeHandAngleLeft;
+float GaugeHandAngleRight;
+
+
+// Testing class
+int HandDirection = 1;
+int Mode = 2;
+
+
+
 
 
 
@@ -121,9 +132,14 @@ void setup(void) {
   tft.fillScreen(ST77XX_BLACK);
   tft.setRotation(3);
   
-  GaugeFaceDraw(1, 52, 52, 50, 0, 360, 5, 150);
+  GaugeFaceDraw(1, GaugeX, GaugeY, GaugeR, GaugeStartAngle, GaugeLenghtAngle, GaugeParts, GaugePartsLong, GaugeHandAngle);
   //GaugeFaceDraw(1, 52, 52, 50, 135, 180, 5, 150);
 }
+
+
+
+
+
 
 
 void loop() {
@@ -144,6 +160,8 @@ void UpdateScreen() {
 	fps(1, 0, 120);
 }
 
+
+/*
 void drawFace() {
 	tft.setRotation(3);
 	tft.setFont();
@@ -162,7 +180,7 @@ void drawFace() {
 	tft.drawCircle(Xo, Yo, RADIUS + 8, FACE);
 
 	//Draw Numeric point
-	/*
+	
 	for (i = 0; i <= 12; i++) {
 		x = Xo + RADIUS * cos(angle * p / 180);
 		y = Yo + RADIUS * sin(angle * p / 180);
@@ -172,7 +190,7 @@ void drawFace() {
 
 	for (i = 0; i < 360; i += 6) {
 		tft.drawPixel(Xo + RADIUS * cos(i * p / 180), Yo + RADIUS * sin(i * p / 180), NUMERIC_POINT);
-	}*/
+	}
   
   
   
@@ -213,132 +231,160 @@ void RotateHand() {
 
 	
 }
+*/
 
 
 
 void IncrementHand() {
-	int MinAngle = 135;
-	int MaxAngle = 180;
+
+	int Step = 1;
 	
 	
-	HandAngle = HandAngle + 5;
-	if (HandAngle > MaxAngle) {
-		HandAngle = MinAngle;
+	if (Mode == 1) { // Only CW
+		GaugeHandAngle = GaugeHandAngle + 5;
+		if (GaugeHandAngle > GaugeMaxAngle) {
+			GaugeHandAngle = GaugeStartAngle;
+		}
+	} else if (Mode == 2) { // CW - CCW
+		if (HandDirection == 1) { //CW
+			GaugeHandAngle = GaugeHandAngle + Step;
+			if (GaugeHandAngle >= GaugeMaxAngle) {
+				GaugeHandAngle = GaugeHandAngle - Step;
+				HandDirection = 0;
+			}
+		} else { //CCW
+			GaugeHandAngle = GaugeHandAngle - Step;
+			if (GaugeHandAngle <= GaugeStartAngle) {
+				GaugeHandAngle = GaugeHandAngle + Step;
+				HandDirection = 1;
+			}
+		}
 	}
-	GaugeFaceDraw(0, 52, 52, 50, 135, 180, 5, HandAngle);
-	//GaugeFaceDraw(0, 52, 52, 50, 0, 360, 5, HandAngle);
-	delay(12);
+
+	//tft.fillCircle(X, Y, R-2, BLACK);
+	GaugeFaceDraw(0, GaugeX, GaugeY, GaugeR, GaugeStartAngle, GaugeLenghtAngle, GaugeParts, GaugePartsLong, GaugeHandAngle);
+
+	//delay(11);
 }
 
 
 
-void GaugeFaceDraw(const bool FirstRun, const int X, const int Y, const int R, const int AngleStart, const int AngleAbs, const int Parts, int HandAngle) {
+void GaugeFaceDraw(const bool FirstRun, const int X, const int Y, const int R, const int AngleStart, const int AngleAbs, const int Parts, const int PartsLong, int GaugeHandAngle) {
 	
-	int i, AuxR, AngleEnd, PartAngle, AngleDiff;
+	int i, AuxR, AngleEnd, PartAngle, LongPartAngle, AngleDiff;
 	AngleEnd = AngleStart + AngleAbs;
 	PartAngle = AngleAbs / Parts;
-	
-	//tft.fillCircle(X, Y, R, BLACK);
+
 	
 	if (FirstRun == 1) {
 		
 		AuxR = R;
 		for (i = AngleStart; i < AngleEnd; i += 1) {
-			tft.drawPixel(X + AuxR * cos(i * p / 180), Y + AuxR * sin(i * p / 180), NUMERIC_POINT);}
+			tft.drawPixel(X + AuxR * cos(i * p / 180), Y + AuxR * sin(i * p / 180), GAUGE_FACE);}
 		AuxR = R + 1;
 		for (i = AngleStart; i < AngleEnd; i += 1) {
-			tft.drawPixel(X + AuxR * cos(i * p / 180), Y + AuxR * sin(i * p / 180), NUMERIC_POINT);}
+			tft.drawPixel(X + AuxR * cos(i * p / 180), Y + AuxR * sin(i * p / 180), GAUGE_FACE);}
 	
 	} else {
 
 		AuxR = R-10;
 		
 		
-		if (HandAngle > HandAngleTop) {
-			AngleDiff = HandAngle - HandAngleTop;
+		if (GaugeHandAngle > GaugeHandAngleTop) {
+			AngleDiff = GaugeHandAngle - GaugeHandAngleTop;
 			if (AngleDiff <= 2) {
-				//	CW
-				tft.drawLine(X+3*cos((HandAngleLeft-1)*p/180), 		 Y+3*sin((HandAngleLeft-1)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop-1)*p/180), Y+(AuxR+6)*sin((HandAngleTop-1)*p/180), BLACK);
-				tft.drawLine(X+4*cos((HandAngleLeft-2)*p/180), 		 Y+4*sin((HandAngleLeft-2)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop-2)*p/180), Y+(AuxR+6)*sin((HandAngleTop-2)*p/180), BLACK);
-				tft.drawLine(X+5*cos((HandAngleLeft-3)*p/180), 		 Y+5*sin((HandAngleLeft-3)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop-3)*p/180), Y+(AuxR+6)*sin((HandAngleTop-3)*p/180), BLACK);
-				tft.drawLine(X+6*cos((HandAngleLeft-4)*p/180), 		 Y+6*sin((HandAngleLeft-4)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop-4)*p/180), Y+(AuxR+6)*sin((HandAngleTop-4)*p/180), BLACK);
-				tft.drawLine(X+7*cos((HandAngleLeft-5)*p/180),		 Y+7*sin((HandAngleLeft-5)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop-5)*p/180), Y+(AuxR+6)*sin((HandAngleTop-5)*p/180), BLACK);
+				//	CW   ========================== >>>>>>>>>  - 30 fps !!!!
+				tft.drawLine(X+3*cos((GaugeHandAngleLeft-1)*p/180), 	  Y+3*sin((GaugeHandAngleLeft-1)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop-1)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop-1)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+4*cos((GaugeHandAngleLeft-2)*p/180), 	  Y+4*sin((GaugeHandAngleLeft-2)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop-2)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop-2)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+5*cos((GaugeHandAngleLeft-3)*p/180), 	  Y+5*sin((GaugeHandAngleLeft-3)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop-3)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop-3)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+6*cos((GaugeHandAngleLeft-4)*p/180), 	  Y+6*sin((GaugeHandAngleLeft-4)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop-4)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop-4)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+7*cos((GaugeHandAngleLeft-5)*p/180),		  Y+7*sin((GaugeHandAngleLeft-5)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop-5)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop-5)*p/180), GAUGE_ERASER);
 			} else {
-				tft.fillTriangle(X+5*cos(HandAngleLeft*p/180), 		 Y+5*sin(HandAngleLeft*p/180), 
-								 X+(AuxR+6)*cos(HandAngleTop*p/180), Y+(AuxR+6)*sin(HandAngleTop*p/180), 
-								 X+5*cos(HandAngleRight*p/180),		 Y+5*sin(HandAngleRight*p/180), BLACK);
+				tft.fillTriangle(X+5*cos(GaugeHandAngleLeft*p/180), 		 Y+5*sin(GaugeHandAngleLeft*p/180), 
+								 X+(AuxR+6)*cos(GaugeHandAngleTop*p/180),    Y+(AuxR+6)*sin(GaugeHandAngleTop*p/180), 
+								 X+5*cos(GaugeHandAngleRight*p/180),		 Y+5*sin(GaugeHandAngleRight*p/180), GAUGE_ERASER);
 								 
-				tft.fillTriangle(X+(AuxR+6)*cos((HandAngleTop-6)*p/180), 		 Y+(AuxR+6)*sin((HandAngleTop-6)*p/180), 
-								 X+2*cos(HandAngleTop*p/180), 					 Y+2*sin(HandAngleTop*p/180), 
-								 X+(AuxR+6)*cos((HandAngleTop+6)*p/180),		 Y+(AuxR+6)*sin((HandAngleTop+6)*p/180), BLACK);
+				tft.fillTriangle(X+(AuxR+6)*cos((GaugeHandAngleTop-6)*p/180),   Y+(AuxR+6)*sin((GaugeHandAngleTop-6)*p/180), 
+								 X+2*cos(GaugeHandAngleTop*p/180), 				Y+2*sin(GaugeHandAngleTop*p/180), 
+								 X+(AuxR+6)*cos((GaugeHandAngleTop+6)*p/180),	Y+(AuxR+6)*sin((GaugeHandAngleTop+6)*p/180), GAUGE_ERASER);
 			}
 		} else {
-			AngleDiff = HandAngle - HandAngleTop;
+			AngleDiff = GaugeHandAngleTop - GaugeHandAngle;
 			if (AngleDiff <= 2) {
 				//	CCW
-				tft.drawLine(X+3*cos((HandAngleRight+1)*p/180), 	 Y+3*sin((HandAngleRight+1)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop+1)*p/180), Y+(AuxR+6)*sin((HandAngleTop+1)*p/180), BLACK);
-				tft.drawLine(X+4*cos((HandAngleRight+2)*p/180), 	 Y+4*sin((HandAngleRight+2)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop+2)*p/180), Y+(AuxR+6)*sin((HandAngleTop+2)*p/180), BLACK);
-				tft.drawLine(X+5*cos((HandAngleRight+3)*p/180), 	 Y+5*sin((HandAngleRight+3)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop+3)*p/180), Y+(AuxR+6)*sin((HandAngleTop+3)*p/180), BLACK);
-				tft.drawLine(X+6*cos((HandAngleRight+4)*p/180), 	 Y+6*sin((HandAngleRight+4)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop+4)*p/180), Y+(AuxR+6)*sin((HandAngleTop+4)*p/180), BLACK);
-				tft.drawLine(X+7*cos((HandAngleRight+5)*p/180), 	 Y+7*sin((HandAngleRight+5)*p/180), 
-							 X+(AuxR+6)*cos((HandAngleTop+5)*p/180), Y+(AuxR+6)*sin((HandAngleTop+5)*p/180), BLACK);
+				tft.drawLine(X+3*cos((GaugeHandAngleRight+1)*p/180), 	  Y+3*sin((GaugeHandAngleRight+1)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop+1)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop+1)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+4*cos((GaugeHandAngleRight+2)*p/180), 	  Y+4*sin((GaugeHandAngleRight+2)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop+2)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop+2)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+5*cos((GaugeHandAngleRight+3)*p/180), 	  Y+5*sin((GaugeHandAngleRight+3)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop+3)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop+3)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+6*cos((GaugeHandAngleRight+4)*p/180), 	  Y+6*sin((GaugeHandAngleRight+4)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop+4)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop+4)*p/180), GAUGE_ERASER);
+				tft.drawLine(X+7*cos((GaugeHandAngleRight+5)*p/180), 	  Y+7*sin((GaugeHandAngleRight+5)*p/180), 
+							 X+(AuxR+6)*cos((GaugeHandAngleTop+5)*p/180), Y+(AuxR+6)*sin((GaugeHandAngleTop+5)*p/180), GAUGE_ERASER);
 			} else {
-				tft.fillTriangle(X+5*cos(HandAngleLeft*p/180), 		 Y+5*sin(HandAngleLeft*p/180), 
-								 X+(AuxR+6)*cos(HandAngleTop*p/180), Y+(AuxR+6)*sin(HandAngleTop*p/180), 
-								 X+5*cos(HandAngleRight*p/180),		 Y+5*sin(HandAngleRight*p/180), BLACK);
+				tft.fillTriangle(X+5*cos(GaugeHandAngleLeft*p/180), 		 Y+5*sin(GaugeHandAngleLeft*p/180), 
+								 X+(AuxR+6)*cos(GaugeHandAngleTop*p/180),    Y+(AuxR+6)*sin(GaugeHandAngleTop*p/180), 
+								 X+5*cos(GaugeHandAngleRight*p/180),		 Y+5*sin(GaugeHandAngleRight*p/180), GAUGE_ERASER);
 								 
-				tft.fillTriangle(X+(AuxR+6)*cos((HandAngleTop-6)*p/180), 		 Y+(AuxR+6)*sin((HandAngleTop-6)*p/180), 
-								 X+2*cos(HandAngleTop*p/180), 					 Y+2*sin(HandAngleTop*p/180), 
-								 X+(AuxR+6)*cos((HandAngleTop+6)*p/180),		 Y+(AuxR+6)*sin((HandAngleTop+6)*p/180), BLACK);
+				tft.fillTriangle(X+(AuxR+6)*cos((GaugeHandAngleTop-6)*p/180),   Y+(AuxR+6)*sin((GaugeHandAngleTop-6)*p/180), 
+								 X+2*cos(GaugeHandAngleTop*p/180), 				Y+2*sin(GaugeHandAngleTop*p/180), 
+								 X+(AuxR+6)*cos((GaugeHandAngleTop+6)*p/180),	Y+(AuxR+6)*sin((GaugeHandAngleTop+6)*p/180), GAUGE_ERASER);
 			}
 		}
 		
-		//tft.fillTriangle(X+2*cos(HandAngleLeft*p/180), Y+2*sin(HandAngleLeft*p/180), X+AuxR*cos(HandAngleTop*p/180), Y+AuxR*sin(HandAngleTop*p/180), X+2*cos(HandAngleRight*p/180), Y+2*sin(HandAngleRight*p/180), BLACK);
-		//tft.drawTriangle(X+2*cos(HandAngleLeft*p/180), Y+2*sin(HandAngleLeft*p/180), X+AuxR*cos(HandAngleTop*p/180), Y+AuxR*sin(HandAngleTop*p/180), X+2*cos(HandAngleRight*p/180), Y+2*sin(HandAngleRight*p/180), BLACK);
+		//tft.fillTriangle(X+2*cos(GaugeHandAngleLeft*p/180), Y+2*sin(GaugeHandAngleLeft*p/180), X+AuxR*cos(GaugeHandAngleTop*p/180), Y+AuxR*sin(GaugeHandAngleTop*p/180), X+2*cos(GaugeHandAngleRight*p/180), Y+2*sin(GaugeHandAngleRight*p/180), BLACK);
+		//tft.drawTriangle(X+2*cos(GaugeHandAngleLeft*p/180), Y+2*sin(GaugeHandAngleLeft*p/180), X+AuxR*cos(GaugeHandAngleTop*p/180), Y+AuxR*sin(GaugeHandAngleTop*p/180), X+2*cos(GaugeHandAngleRight*p/180), Y+2*sin(GaugeHandAngleRight*p/180), BLACK);
 
-		HandAngleTop = HandAngle;
+		GaugeHandAngleTop = GaugeHandAngle;
 		
-		if (HandAngleTop < 90) {
-			HandAngleLeft = 360 - 90 + HandAngleTop;
+		if (GaugeHandAngleTop < 90) {
+			GaugeHandAngleLeft = 360 - 90 + GaugeHandAngleTop;
 		} else {
-			HandAngleLeft = HandAngleTop - 90;
+			GaugeHandAngleLeft = GaugeHandAngleTop - 90;
 		}
 		
-		if (360-HandAngleTop < 90) {
-			HandAngleRight = 90 - (360-HandAngleTop);
+		if (360-GaugeHandAngleTop < 90) {
+			GaugeHandAngleRight = 90 - (360-GaugeHandAngleTop);
 		} else {
-			HandAngleRight = HandAngleTop + 90;
+			GaugeHandAngleRight = GaugeHandAngleTop + 90;
 		}
 		
-		tft.fillTriangle(X+2*cos(HandAngleLeft*p/180), Y+2*sin(HandAngleLeft*p/180), X+AuxR*cos(HandAngleTop*p/180), Y+AuxR*sin(HandAngleTop*p/180), X+2*cos(HandAngleRight*p/180), Y+2*sin(HandAngleRight*p/180), WHITE);
+		tft.fillTriangle(X+2*cos(GaugeHandAngleLeft*p/180),   Y+2*sin(GaugeHandAngleLeft*p/180), 
+						 X+AuxR*cos(GaugeHandAngleTop*p/180), Y+AuxR*sin(GaugeHandAngleTop*p/180), 
+						 X+2*cos(GaugeHandAngleRight*p/180),  Y+2*sin(GaugeHandAngleRight*p/180), GAUGE_MAIN_HAND);
 
-		tft.fillCircle(X, Y, 2, WHITE);
+		tft.fillCircle(X, Y, 2, GAUGE_CENTRAL_POINT);
 
 
+		int PartsLongCount = PartsLong;
 
-		AuxR = R-7;
+		
 		for (i = AngleStart; i < AngleEnd+5; i += PartAngle) {
-			tft.drawLine(X+AuxR*cos(i*p/180), Y+AuxR*sin(i*p/180), X+R*cos(i*p/180), Y+R*sin(i*p/180), NUMERIC_POINT);
+			if (PartsLongCount == PartsLong) {
+				AuxR = R-10;
+				tft.drawLine(X+AuxR*cos(i*p/180), Y+AuxR*sin(i*p/180), X+R*cos(i*p/180), Y+R*sin(i*p/180), GAUGE_MARKS_LONG);
+				PartsLongCount = 1;
+			} else {
+				AuxR = R-6;
+				tft.drawLine(X+AuxR*cos(i*p/180), Y+AuxR*sin(i*p/180), X+R*cos(i*p/180), Y+R*sin(i*p/180), GAUGE_MARKS);
+				PartsLongCount = PartsLongCount + 1;
+			}
+			
 		}
+		
 	}
 
 	
 }
 
 
-void GaugeSetHand() {
-	
-	
-}
+
 
 
 
@@ -363,62 +409,6 @@ static inline void fps(const int seconds, const int x, const int y){
     lastMillis = now;
   }
 }
-
-
-
-
-
-/*
-void calc_SecondHand()
-{
-  float angle; // in radian
-  //  int Xa, Ya, Xb, Yb;
-  angle =  0.785;
-  ps.a.x = Xo + (Hand_LEN) * cos(angle);
-  ps.a.y = Yo + (Hand_LEN) * sin(angle);
-  angle += 3.142; // +180 degree
-  ps.b.x = Xo + (Hand_TAIL) * cos(angle);
-  ps.b.y = Yo + (Hand_TAIL) * sin(angle);
-}
-
-
-
-
-void draw_NewSecondHand()
-{
-  tft.drawLine(n_hands.Sec.a.x, n_hands.Sec.a.y, n_hands.Sec.b.x, n_hands.Sec.b.y, CREF_SECOND);
-  tft.fillCircle(n_hands.Sec.b.x, n_hands.Sec.b.y, 2, CREF_SECOND);
-}
-
-
-void cdraw_SecondHand()
-{
-
-  tft.fillCircle(o_hands.Sec.b.x, o_hands.Sec.b.y, 2, CREF_BACKGROUND); 
-  tft.fillCircle(n_hands.Sec.b.x, n_hands.Sec.b.y, 2, CREF_SECOND);
-  tft.drawLine(o_hands.Sec.a.x, o_hands.Sec.a.y, o_hands.Sec.b.x, o_hands.Sec.b.y, CREF_BACKGROUND);
-  tft.drawLine(n_hands.Sec.a.x, n_hands.Sec.a.y, n_hands.Sec.b.x, n_hands.Sec.b.y, CREF_SECOND);
-  tft.fillCircle(n_hands.Sec.b.x, n_hands.Sec.b.y, 2, CREF_SECOND);
-}
-
-
-
-
-
-void calc_Hands(HAND_SET &hs, TME t)
-{
-  calc_SecondHand(t, hs.Sec);
-}
-
-*/
-
-
-
-
-
-
-
-
 
 
 
